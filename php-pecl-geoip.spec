@@ -1,3 +1,5 @@
+# centos/sclo spec file for php-pecl-geoip, from:
+#
 # remirepo spec file for php-pecl-geoip
 # with SCL compatibility, from:
 #
@@ -10,35 +12,36 @@
 #
 %if 0%{?scl:1}
 %global sub_prefix %{scl_prefix}
+%if "%{scl}" == "rh-php56"
+%global sub_prefix sclo-php56-
+%endif
+%if "%{scl}" == "rh-php70"
+%global sub_prefix sclo-php70-
+%endif
+%if "%{scl}" == "rh-php71"
+%global sub_prefix sclo-php71-
+%endif
 %scl_package       php-pecl-geoip
 %endif
 
 %define pecl_name  geoip
-%global with_zts   0%{!?_without_zts:%{?__ztsphp:1}}
-%if "%{php_version}" < "5.6"
-%global ini_name  %{pecl_name}.ini
-%else
-%global ini_name  40-%{pecl_name}.ini
-%endif
-
+%global ini_name   40-%{pecl_name}.ini
 
 Name:           %{?sub_prefix}php-pecl-geoip
 Version:        1.1.1
-Release:        3%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:        2%{?dist}
 Summary:        Extension to map IP addresses to geographic places
 Group:          Development/Languages
 License:        PHP
 URL:            http://pecl.php.net/package/%{pecl_name}
 Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  GeoIP-devel
 BuildRequires:  %{?scl_prefix}php-devel
 BuildRequires:  %{?scl_prefix}php-pear
 
 Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
-%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
 Provides:       %{?scl_prefix}php-%{pecl_name}               = %{version}
 Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa}       = %{version}
@@ -47,30 +50,6 @@ Provides:       %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 %if "%{?scl_prefix}" != "%{?sub_prefix}"
 Provides:       %{?scl_prefix}php-pecl-%{pecl_name}          = %{version}-%{release}
 Provides:       %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa}  = %{version}-%{release}
-%endif
-
-%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
-# Other third party repo stuff
-Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
-Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
-Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
-%if "%{php_version}" > "5.5"
-Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "5.6"
-Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "7.0"
-Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "7.1"
-Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
-Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
-%endif
 %endif
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
@@ -94,7 +73,7 @@ Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSIO
 
 # Don't install/register tests
 sed -e 's/role="test"/role="src"/' \
-    %{?_licensedir:-e '/LICENSE/s/role="doc"/role="src"/' } \
+    -e '/LICENSE/s/role="doc"/role="src"/' \
     -i package.xml
 
 mv %{pecl_name}-%{version} NTS
@@ -112,10 +91,6 @@ cat > %{ini_name} << 'EOF'
 extension=%{pecl_name}.so
 EOF
 
-%if %{with_zts}
-cp -pr NTS ZTS
-%endif
-
 
 %build
 cd NTS
@@ -123,23 +98,9 @@ cd NTS
 %configure  --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
 
-%if %{with_zts}
-cd ../ZTS
-%{_bindir}/zts-phpize
-%configure  --with-php-config=%{_bindir}/zts-php-config
-make %{?_smp_mflags}
-%endif
-
 
 %install
-rm -rf %{buildroot}
-
 make -C NTS install INSTALL_ROOT=%{buildroot}
-
-%if %{with_zts}
-make -C ZTS install INSTALL_ROOT=%{buildroot}
-install -Dpm644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
-%endif
 
 # Install XML package description
 install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
@@ -159,13 +120,6 @@ done
     -d extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
     -m | grep %{pecl_name}
 
-%if %{with_zts}
-: Minimal load test for ZTS extension
-%{__ztsphp} -n \
-    -d extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
-    -m | grep %{pecl_name}
-%endif
-
 cd NTS
 # Missing IPv6 data
 rm tests/019.phpt
@@ -180,11 +134,6 @@ NO_INTERACTION=1 \
     --show-diff
 
 
-%clean
-rm  -rf %{buildroot}
-
-
-%if 0%{?fedora} < 24
 # when pear installed alone, after us
 %triggerin -- %{?scl_prefix}php-pear
 if [ -x %{__pecl} ] ; then
@@ -201,30 +150,23 @@ fi
 if [ $1 -eq 0 -a -x %{__pecl} ] ; then
    %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
-%endif
 
 
 %files
-%defattr(-,root,root,-)
-%{?_licensedir:%license NTS/LICENSE}
+%license NTS/LICENSE
 %doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
 
 %config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
 
-%if %{with_zts}
-%{php_ztsextdir}/%{pecl_name}.so
-%config(noreplace) %{php_ztsinidir}/%{ini_name}
-%endif
-
 
 %changelog
-* Thu Dec  1 2016 Remi Collet <remi@fedoraproject.org> - 1.1.1-3
-- rebuild with PHP 7.1.0 GA
+* Wed Aug  9 2017 Remi Collet <remi@fedoraproject.org> - 1.1.1-2
+- minor change for sclo-php71
 
-* Wed Sep 14 2016 Remi Collet <remi@fedoraproject.org> - 1.1.1-2
-- rebuild for PHP 7.1 new API version
+* Mon Dec  5 2016 Remi Collet <remi@fedoraproject.org> - 1.1.1-1
+- cleanup for SCLo build
 
 * Thu Sep 01 2016 Remi Collet <remi@fedoraproject.org> - 1.1.1-1
 - Update to 1.1.1

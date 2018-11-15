@@ -12,14 +12,14 @@
 #
 %if 0%{?scl:1}
 %global sub_prefix %{scl_prefix}
-%if "%{scl}" == "rh-php56"
-%global sub_prefix sclo-php56-
-%endif
 %if "%{scl}" == "rh-php70"
 %global sub_prefix sclo-php70-
 %endif
 %if "%{scl}" == "rh-php71"
 %global sub_prefix sclo-php71-
+%endif
+%if "%{scl}" == "rh-php72"
+%global sub_prefix sclo-php72-
 %endif
 %scl_package       php-pecl-geoip
 %endif
@@ -29,7 +29,7 @@
 
 Name:           %{?sub_prefix}php-pecl-geoip
 Version:        1.1.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Extension to map IP addresses to geographic places
 Group:          Development/Languages
 License:        PHP
@@ -162,6 +162,9 @@ fi
 
 
 %changelog
+* Thu Nov 15 2018 Remi Collet <remi@remirepo.net> - 1.1.1-3
+- build for sclo-php72
+
 * Wed Aug  9 2017 Remi Collet <remi@fedoraproject.org> - 1.1.1-2
 - minor change for sclo-php71
 
